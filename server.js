@@ -14,6 +14,7 @@ let waitingUser = null;
 io.on('connection', (socket) => {
   console.log('👤 Nuevo usuario conectado:', socket.id);
 
+  // Conexión aleatoria
   if (waitingUser) {
     const roomId = uuidv4();
     socket.join(roomId);
@@ -26,6 +27,7 @@ io.on('connection', (socket) => {
     socket.emit('chat message', '⌛ Esperando a alguien para hablar...');
   }
 
+  // Mensajes de texto
   socket.on('chat message', (msg) => {
     const rooms = [...socket.rooms].filter(r => r !== socket.id);
     rooms.forEach(room => {
@@ -33,11 +35,18 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Mensajes de imagen
+  socket.on('chat image', (imageData) => {
+    const rooms = [...socket.rooms].filter(r => r !== socket.id);
+    rooms.forEach(room => {
+      io.to(room).emit('chat image', imageData);
+    });
+  });
+
+  // Desconexión
   socket.on('disconnect', () => {
     console.log('❌ Usuario desconectado:', socket.id);
-    if (waitingUser === socket) {
-      waitingUser = null;
-    }
+    if (waitingUser === socket) waitingUser = null;
   });
 });
 

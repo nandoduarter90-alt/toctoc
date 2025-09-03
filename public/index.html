@@ -6,7 +6,9 @@
   <style>
     body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
     #messages { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; background: #fff; }
-    #form { margin-top: 10px; }
+    #form { margin-top: 10px; display: flex; gap: 5px; }
+    #input { flex: 1; }
+    img { max-width: 200px; margin: 5px 0; }
   </style>
 </head>
 <body>
@@ -14,10 +16,58 @@
   <div id="messages"></div>
   <form id="form">
     <input id="input" autocomplete="off" placeholder="Escribí un mensaje..." />
+    <input type="file" id="imageInput" accept="image/*">
     <button>Enviar</button>
   </form>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="client.js"></script>
+  <script>
+    const socket = io();
+    const form = document.getElementById('form');
+    const input = document.getElementById('input');
+    const imageInput = document.getElementById('imageInput');
+    const messagesDiv = document.getElementById('messages');
+
+    // Enviar mensaje de texto
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (input.value) {
+        socket.emit('chat message', input.value);
+        input.value = '';
+      }
+    });
+
+    // Enviar imagen
+    imageInput.addEventListener('change', () => {
+      const file = imageInput.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const imageData = reader.result; // base64
+        socket.emit('chat image', imageData);
+      };
+      reader.readAsDataURL(file);
+      imageInput.value = ''; // limpiar el input
+    });
+
+    // Recibir mensajes de texto
+    socket.on('chat message', (msg) => {
+      const p = document.createElement('p');
+      p.textContent = msg;
+      messagesDiv.appendChild(p);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+
+    // Recibir imágenes
+    socket.on('chat image', (imageData) => {
+      const img = document.createElement('img');
+      img.src = imageData;
+      messagesDiv.appendChild(img);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+
+    //<button id="nextBtn">🔄 Siguiente</button>
+  </script>
 </body>
 </html>
